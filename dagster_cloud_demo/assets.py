@@ -35,7 +35,7 @@ def raw_data(config: RawDataConfig) -> pd.DataFrame:
 
 
 @asset
-def cleaned_data(raw_data: pd.DataFrame) -> pd.DataFrame:
+def cleaned_data(raw_data: pd.DataFrame) -> Output[pd.DataFrame]:
     """The preprocessed and cleaned dataset"""
 
     df = raw_data.dropna()

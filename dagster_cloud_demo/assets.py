@@ -7,6 +7,7 @@ from dagster import (
     AssetOut,
     Config,
     FilesystemIOManager,
+    Output,
     StaticPartitionsDefinition,
     asset,
     get_dagster_logger,
@@ -34,16 +35,23 @@ def raw_data(config: RawDataConfig) -> pd.DataFrame:
 
 
 @asset
-def cleaned_data(raw_data: pd.DataFrame) -> pd.DataFrame:
+def cleaned_data(raw_data: pd.DataFrame) -> Output[pd.DataFrame]:
     """The preprocessed and cleaned dataset"""
 
     df = raw_data.dropna()
     df["Survived"] = df["Survived"].apply(bool)
-    return raw_data
+    return Output(
+        raw_data,
+        metadata={
+            "num_rows": len(df),
+        },
+    )
 
 
 @asset(partitions_def=by_gender, io_manager_def=FilesystemIOManager())
 def partitioned_data(cleaned_data: pd.DataFrame):
+    """The cleaned dataset partitioned by gender"""
+
     return (
         cleaned_data[cleaned_data["Sex"] == "male"],
         cleaned_data[cleaned_data["Sex"] == "female"],
@@ -59,6 +67,9 @@ def partitioned_data(cleaned_data: pd.DataFrame):
     }
 )
 def train_test_set(cleaned_data: pd.DataFrame):
+    """Train/test splits based on the cleaned dataset"""
+    # pylint: disable=invalid-name
+
     target_column = "Survived"
 
     logger.info("Performing train/test split")
